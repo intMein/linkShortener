@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/lib/pq"
+	"sync"
 )
 
 type Shortener interface {
@@ -15,9 +16,12 @@ type Shortener interface {
 
 type InMemoryDB struct {
 	links map[string]string
+	m     sync.Mutex
 }
 
 func (db *InMemoryDB) Get(key string) (string, error) {
+	db.m.Lock()
+	defer db.m.Unlock()
 	v, ok := db.links[key]
 
 	if !ok {
@@ -28,12 +32,16 @@ func (db *InMemoryDB) Get(key string) (string, error) {
 }
 
 func (db *InMemoryDB) Set(key string, url string) error {
+	db.m.Lock()
+	defer db.m.Unlock()
 	db.links[key] = url
 
 	return nil
 }
 
 func (db *InMemoryDB) Has(key string) (bool, error) {
+	db.m.Lock()
+	defer db.m.Unlock()
 	_, ok := db.links[key]
 
 	return ok, nil
